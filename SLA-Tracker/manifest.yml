@@ -1,0 +1,34 @@
+modules:
+  jira:adminPage:
+    - key: sla-tracker
+      function: config
+      title: SLA Tracker
+  function:
+    - key: config
+      handler: config.run
+app:
+  id: ari:cloud:ecosystem::app/e369a089-512f-4569-a619-e5b5df46475b
+permissions:
+  scopes:
+    - storage:app
+    - send:notification:jira
+    - read:issue-meta:jira
+    - read:avatar:jira
+    - read:issue.changelog:jira
+    - read:issue-type:jira
+    - read:project:jira
+    - read:project.property:jira
+    - read:user:jira
+    - read:application-role:jira
+    - read:avatar:jira
+    - read:group:jira
+    - read:issue-type-hierarchy:jira
+    - read:project-category:jira
+    - read:project-version:jira
+    - read:project.component:jira
+    - read:issue-security-level:jira
+    - read:issue.vote:jira
+    - read:issue:jira
+    - read:status:jira
+    - read:field-configuration:jira
+    - read:field:jira
