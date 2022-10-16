@@ -16,6 +16,7 @@
     "@atlaskit/datetime-picker": "^12.2.0",
     "@forge/api": "^2.7.0",
     "@forge/ui": "1.4.0",
-    "date-fns": "^2.29.3"
+    "date-fns": "^2.29.3",
+    "mkdirp": "^1.0.4"
   }
 }

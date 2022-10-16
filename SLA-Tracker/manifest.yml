@@ -1,15 +1,44 @@
 modules:
   jira:adminPage:
-    - key: sla-tracker
+    - key: sla-tracker-config
       function: config
       title: SLA Tracker
+  jira:customField:
+    - key: viewSLA
+      name: View SLA Time
+      description: Tracks SLA of issue
+      type: string
+  jira:issuePanel:
+    - key: sla
+      function: viewSla
+      title: SLA
+      icon: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+      description: Displays SLA of an issue
+  trigger:
+    - key: sla-trigger
+      function: trigger
+      events: [ 'avi:jira:created:issue' ]
+  webtrigger:
+    - key: web-trigger
+      function: scheduled-trigger
+  scheduledTrigger:
+    - key: web-scheduled-trigger
+      function: scheduled-trigger
+      interval: hour
   function:
     - key: config
       handler: config.run
+    - key: viewSla
+      handler: sla.run
+    - key: trigger
+      handler: sla.trigger
+    - key: scheduled-trigger
+      handler: sla.scheduledTrigger
 app:
   id: ari:cloud:ecosystem::app/e369a089-512f-4569-a619-e5b5df46475b
 permissions:
   scopes:
+    - write:jira-work
     - storage:app
     - send:notification:jira
     - read:issue-meta:jira
@@ -20,7 +49,6 @@ permissions:
     - read:project.property:jira
     - read:user:jira
     - read:application-role:jira
-    - read:avatar:jira
     - read:group:jira
     - read:issue-type-hierarchy:jira
     - read:project-category:jira
@@ -32,3 +60,4 @@ permissions:
     - read:status:jira
     - read:field-configuration:jira
     - read:field:jira
+    - read:jira-work
