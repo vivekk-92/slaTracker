@@ -7,6 +7,7 @@ export const Week_DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Sa
 
 export const ISSUE_SEVERITY = ['Critical','High','Medium','Low'];
 
+export const ISSUE_CREATED_NOTIFICATION = "Issue is created. Team will be working on resolving it soon. Please refer \"View SLA Time\" field for SLA details"
 export const FIRST_NOTIFICATION = "REMINDER 1 : Almost half of the time for SLA has been elapsed."
 export const SECOND_NOTIFICATION = "REMINDER 2 : We are nearing the time for SLA completion. Please hurry!"
 export const ESCALATION_ONE = "WARNING: SLA has been breached!"

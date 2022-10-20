@@ -2,9 +2,10 @@ import ForgeUI, {
     IssuePanel, Fragment, render,
     Text, useState
 } from "@forge/ui";
-import {addComment, getIssue, getIssueDetails, getIssues, sla, updateSLA} from "./helpers";
-import {FIRST_NOTIFICATION} from "./constants";
-
+import {addComment, getIssue, getIssueDetails, getIssues, slackRequest, updateSLA} from "./helpers";
+import {sla,getParticularMessage} from "./calculation";
+import {ESCALATION_TWO, FIRST_NOTIFICATION, ISSUE_CREATED_NOTIFICATION, STORAGE_KEY_PREFIX} from "./constants";
+import {storage} from "@forge/api";
 const App = (issueId) => {
 
     return (
@@ -27,32 +28,28 @@ const updateIssueId = async function(issueId) {
 export async function trigger(event,context){
 
     console.log("Event Triggered")
-    // console.log(event)
     const rest = await getIssue(event.issue.id)
-    // console.log("rest", rest)
-    // console.log("priority", rest.fields.priority.name)
+    const slaValue = await sla(event.issue.fields.created,rest.fields.priority.name,rest.fields.project.key)
+    console.log(`Calculated SLA is: ${slaValue}`)
 
-    // console.log(sla(event.issue.fields.created,rest.fields.priority.name))
-    await updateSLA(event.issue.id,sla(event.issue.fields.created,rest.fields.priority.name))
-    await addComment(event.issue.id,FIRST_NOTIFICATION)
+    await updateSLA(event.issue.id,slaValue)
+    await addComment(event.issue.id,ISSUE_CREATED_NOTIFICATION,rest.fields.project.key)
+
+
 }
 
 export async function scheduledTrigger(event){
 
     console.log("Web Event Triggered")
-   // console.log(getIssues())
     const rest = await getIssues()
     const issuesList = rest.issues
-    // console.log("rest", issuesList)
-    console.log(typeof issuesList)
-   issuesList.map(issue => {
-       //Check if data present in custom field
-       // if yes, && customField val > curreny Date Time
-       //send SLA breach notification
+
+   issuesList.map(async(issue) => {
        console.log(issue.id + "  , "+issue.fields.priority.name + " , "+ issue.fields.created + " , " + issue.fields.customfield_10048)
+       const comment =  await getParticularMessage(issue.fields.created,issue.fields.priority.name,issue.fields.project.key,issue.fields.customfield_10048)
+       console.log("Comment message is: "+comment)
+       await addComment(issue.id,comment,issue.fields.project.key)
+
    })
-    // console.log("priority", rest.fields.priority.name)
-    //
-    // console.log(sla(event.issue.fields.created,rest.fields.priority.name))
-    // await updateSLA(event.issue.id,sla(event.issue.fields.created,rest.fields.priority.name))
+
 }

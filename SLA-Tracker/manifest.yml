@@ -38,6 +38,7 @@ app:
   id: ari:cloud:ecosystem::app/e369a089-512f-4569-a619-e5b5df46475b
 permissions:
   scopes:
+    - read:jira-user
     - write:jira-work
     - storage:app
     - send:notification:jira
@@ -61,3 +62,7 @@ permissions:
     - read:field-configuration:jira
     - read:field:jira
     - read:jira-work
+  external:
+    fetch:
+      backend:
+        - 'https://hooks.slack.com'

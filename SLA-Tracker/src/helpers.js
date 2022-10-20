@@ -1,4 +1,5 @@
 import api, { route ,storage} from "@forge/api";
+import {ESCALATION_ONE, ESCALATION_TWO, STORAGE_KEY_PREFIX} from "./constants";
 
 
 export const getDataFromJira = async (url) => {
@@ -34,19 +35,7 @@ export const getIssues = async() =>{
             'Accept': 'application/json'
         }
     });
-  //  console.log(`Response: ${response.status} ${response.statusText}`);
-  //  console.log(await response.json());
     return await response.json()
-}
-
-export const getIssueDetails = async() => {
-    const response = await getDataFromJira(route`/rest/api/3/issue/10017`, {
-        headers: {
-            'Accept': 'application/json'
-        }
-    });
-    console.log(`Response: ${response.status} ${response.statusText}`);
-    console.log(await response.json());
 }
 
 export const getIssue = async(issueId) => {
@@ -57,10 +46,18 @@ export const getIssue = async(issueId) => {
     });
 
     console.log(`Response: ${response.status} ${response.statusText}`);
-    console.log(await response.json());
     return await response.json()
 }
-
+export const getUser = async (accountId) => {
+    console.log(`accountId in getUser: ${accountId}`)
+    const response = await api.asApp().requestJira(route`/rest/api/3/user?accountId=${accountId}`, {
+        headers: {
+            'Accept': 'application/json'
+        }
+    });
+    console.log(`Response from getUser: ${JSON.stringify(await response.json())}`)
+    return await response.json()
+}
 export const updateSLA = async (issueId,slaValue) => {
     const fieldKey = "e369a089-512f-4569-a619-e5b5df46475b__DEVELOPMENT__viewSLA"
     const body = {updates:[
@@ -89,8 +86,57 @@ export const getCommentsOnIssue = async (issueId) => {
     return await response.json()
 }
 
-export const addCommentOnIssue = async (issueId, commentMessage) =>{
-    debugger
+export const AddCommentOnIssue = async (projectKey, issueId, commentMessage) =>{
+    const storageData =  await storage.get(`${STORAGE_KEY_PREFIX}_${projectKey}`);
+    let user
+    let contentBody
+    console.log(`storage Data: ${storageData}`)
+    switch(commentMessage) {
+        case ESCALATION_ONE:
+            user = await getUser(storageData['escalationLevel1'])
+            contentBody = [
+                {
+                    text: commentMessage,
+                    type: "text"
+                },
+                {
+                    type: "mention",
+                    attrs: {
+                        id: user.accountId,
+                        text: "@"+user.displayName,
+                        userType: "APP"
+                    }
+                }
+            ]
+            break;
+        case ESCALATION_TWO:
+            user = await getUser(storageData['escalationLevel2'])
+            console.log(`user.accountId: ${user.accountId}`)
+            contentBody = [
+                {
+                    text: commentMessage,
+                    type: "text"
+                },
+                {
+                    type: "mention",
+                    attrs: {
+                        id: user.accountId,
+                        text: "@"+user.displayName,
+                        userType: "APP"
+                    }
+                }
+            ]
+            console.log(contentBody)
+            break;
+        default:
+            contentBody = [
+                {
+                    text: commentMessage,
+                    type: "text"
+                }
+            ]
+    }
+
     const body = {body:
             {
                 type: "doc",
@@ -98,24 +144,13 @@ export const addCommentOnIssue = async (issueId, commentMessage) =>{
                 content: [
                     {
                         type: "paragraph",
-                        content: [
-                            {
-                                text: commentMessage,
-                                type: "text"
-                            }
-                        ]
-                    },
-                    {
-                        type: "mention",
-                        attrs: {
-                            id:"631775c3316bbc56c425a9dc",
-                            text: "Arpit Sangal"
-                        }
+                        content: contentBody
                     }
                 ]
             }
         };
 
+    console.log(`comment Body: ${JSON.stringify(body)}`)
     const response = await api.asApp().requestJira(route`/rest/api/3/issue/${issueId}/comment`, {
         method: 'POST',
         headers: {
@@ -128,17 +163,14 @@ export const addCommentOnIssue = async (issueId, commentMessage) =>{
     return response
 }
 
-export const addComment = async (issueId,commentMessage) => {
-
+export const addComment = async (issueId,commentMessage,projectKey) => {
+    console.log(`Inside Add Comment with following values: ${issueId} : ${commentMessage} : ${projectKey}` )
     const commentsList = (await getCommentsOnIssue(issueId)).comments
-    console.log(commentsList)
-    console.log(typeof commentsList)
+    console.log(`commentList of issue is: ${commentsList}`)
     let isCommentAlreadySent = false
     if(commentsList !== undefined) {
         commentsList.map(comment => {
-            console.log(comment)
             let tmpCommentText = comment.body.content[0].content[0].text
-            console.log(tmpCommentText)
             if (tmpCommentText.includes(commentMessage)) {
                 isCommentAlreadySent = true
                 console.log("already commented")
@@ -147,127 +179,29 @@ export const addComment = async (issueId,commentMessage) => {
     }
     if(!isCommentAlreadySent){
         console.log("Sending Comment")
-        await addCommentOnIssue(issueId,commentMessage)
+        await AddCommentOnIssue(projectKey,issueId,commentMessage)
     }
 
 }
 
-const createdAt = "2022-10-14T04:21:33.247+0530"
-const priority = "Critical"
-const SLA = {
-    'Highest': 4,
-    'High': 24,
-    'Medium': 48,
-    'Low': 100,
-    'Lowest': 200
-}
-const createdBy = "Reporter"
-const assignedTo = "Assignee"
-const priorityList = []
-const dayList =
-    {
-        'Sunday': 0,
-        'Monday': 1,
-        'Tuesday': 2,
-        'Wednesday': 3,
-        'Thursday': 4,
-        'Friday': 5,
-        'Saturday': 6
+export async function slackRequest(comment) {
+    const body = {
+        text: comment
     }
-const dayListCode = {
-    'Sun': 0,
-    'Mon': 1,
-    'Tue': 2,
-    'Wed': 3,
-    'Thu': 4,
-    'Fri': 5,
-    'Sat': 6
+console.log(JSON.stringify(body))
+    const response = await api.fetch(`https://hooks.slack.com/services/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`,{
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    });
+    // if (!response.ok) {
+    //     const err = `Error invoking (Slack): ${response.status} ${response.statusText}`;
+    //     throw new Error(err);
+    // }
+    console.log(response)
+    // const responseBody = await response.json();
+    // return responseBody;
 }
-const excludeDays = ['Saturday', 'Sunday']
-const includeTime = ["10:00", "19:00"]
-// getSLAforNewIssue(createdAt, priority)
-export const sla = (date, priority) => {
-    const SLATime = SLA[priority]
-    let manipulatedSLATime = SLATime
-    let manipulatedDate
-    let workingHours = parseInt(includeTime[1]) - parseInt(includeTime[0])
-    let startTime = parseInt(includeTime[0])
-    let endTime = parseInt(includeTime[1])
-    let date2 = new Date(date)
-    if (isDateisExcluded(date) === false) {
-        console.log(date2.getHours())
-        if ((date2.getHours() >= startTime) && (date2.getHours() < endTime)) {
-            manipulatedSLATime = manipulatedSLATime - (endTime - date2.getHours())
-            if (manipulatedSLATime < 0) {
-                manipulatedDate = addHoursToDate(date, SLATime)
-                console.log(manipulatedDate.toString())
-                return manipulatedDate
-            }
-        }
-        if (date2.getHours() < startTime) {
-            if (SLATime > workingHours) {
-                manipulatedSLATime = manipulatedSLATime - workingHours
-            }
-            else {
-                manipulatedDate = addHoursToDate(date, (startTime - date2.getHours() + SLATime))
-                console.log(manipulatedDate.toString())
-                return manipulatedDate
-            }
-        }
-    }
-    manipulatedDate = addHoursToDate(date, (24 - date2.getHours()))
-    console.log(manipulatedDate)
-    while (manipulatedSLATime >= 0) {
-        if (isDateisExcluded(manipulatedDate) === true) {
-            manipulatedDate = addHoursToDate(manipulatedDate, 24)
-            console.log("manipulatedDate", manipulatedDate)
-        }
-        else {
-            manipulatedDate = addHoursToDate(manipulatedDate, startTime)
-            if ((manipulatedSLATime - workingHours) > 0) {
-                manipulatedSLATime = manipulatedSLATime - workingHours
-                manipulatedDate = addHoursToDate(manipulatedDate, workingHours)
-                manipulatedDate = addHoursToDate(manipulatedDate, 24 - endTime)
-                console.log(manipulatedSLATime)
-                console.log(manipulatedDate.toString())
-            }
-            else if (manipulatedSLATime < workingHours) {
-                manipulatedDate = addHoursToDate(manipulatedDate, manipulatedSLATime)
-                manipulatedSLATime = manipulatedSLATime - workingHours
-                console.log("final SLA time", manipulatedDate.toString())
-                return manipulatedDate.toString()
-            }
-            else {
-                break
-            }
-        }
-    }
-}
-function getTime(time) {
-    var theDate = new Date(Date.parse(time))
-    return theDate.toLocaleString()
-}
-function isDateisExcluded(date) {
-    const dateOfDay = new Date(date);
-    const dayNumeric = dateOfDay.getDay()
-    const dayWord = Object.keys(dayListCode)[dayNumeric]
-    let excludeFlag = false;
-    for (let ex of excludeDays) {
-        if (ex.includes(dayWord) == true) {
-            excludeFlag = true
-            break
-        }
-    }
-    return excludeFlag
-}
-// function getHours(todaysDate) {
-//     var theDate = new Date(Date.parse(todaysDate))
-//     return theDate.toLocaleString()
-// }
-function addHoursToDate(dateTime, intHours) {
-    var objDate = new Date(dateTime);
-    var numberOfMlSeconds = objDate.getTime();
-    var addMlSeconds = (intHours * 60) * 60 * 1000;
-    var newDateObj = new Date(numberOfMlSeconds + addMlSeconds);
-    return newDateObj;
-}
+

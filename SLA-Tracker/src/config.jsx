@@ -85,6 +85,7 @@ const App = () => {
         setProjectConfigState(projectConfig);
         setProjectConfigSubmitted(true);
         setProjectAlreadyConfigured(true)
+        setConfigTableNotSeen(false)
         setStartTime(projectConfig['startTime'])
         setEndTime(projectConfig['endTime'])
         setWorkingDays(projectConfig['WorkingDays'].reduce((accumulator,currentValue)=>{ return " " + accumulator  + ", " +currentValue }))
@@ -105,7 +106,7 @@ const App = () => {
             ? <Fragment>
                 <Text>In this page you can modify <Strong>SLA</Strong> configuration for selected project</Text>
                 <Form onSubmit={onProjectPicked} submitButtonText="Choose">
-                    <Select label="Choose project" name="project" >
+                    <Select label="Choose project" name="project" isRequired={true} >
                         {projectData.map(project => <Option label={project.name} value={project.key} />)}
                     </Select>
                 </Form>
@@ -114,14 +115,13 @@ const App = () => {
     }
 
     const renderWorkingHours = (shiftLabel, shiftName) => (
-        <Select label= {shiftLabel} name={shiftName}>
-            {Object.values(TIME_OPTIONS).map(option => <Option label={option + " AM"} value={option + " AM"} />)}
-            {Object.values(TIME_OPTIONS).map(option => <Option label={option + " PM"} value={option + " PM"} />)}
+        <Select label= {shiftLabel} name={shiftName} isRequired={true}>
+            {Object.values(TIME_OPTIONS).map(option => <Option label={option} value={option} />)}
         </Select>
     )
 
     const renderWorkingDays = () => (
-        <Select label= "Choose Working Days of a week" name="WorkingDays" isMulti={true}>
+        <Select label= "Choose Working Days of a week" name="WorkingDays" isMulti={true} isRequired={true}>
             {Object.values(Week_DAYS).map(option => <Option label={option} value={option} />)}
         </Select>
     )
@@ -165,10 +165,10 @@ const App = () => {
                         <Text>{issue}</Text>
                     </Cell>
                     <Cell>
-                        <TextField label="" name={issue} />
+                        <TextField isRequired={true} label="" name={issue} />
                     </Cell>
                     <Cell>
-                        <TextField label="" name={issue.concat("_escalationSla")} />
+                        <TextField isRequired={true} label="" name={issue.concat("_escalationSla")} />
                     </Cell>
                 </Row>
             ))}
@@ -206,12 +206,12 @@ const App = () => {
             </Head>
                 <Row>
                     <Cell>
-                        <UserPicker label="Escalation Level 1" name="escalationLevel1" />
+                        <UserPicker isRequired={true} label="Escalation Level 1" name="escalationLevel1" />
                     </Cell>
                 </Row>
             <Row>
                 <Cell>
-                    <UserPicker label="Escalation Level 2" name="escalationLevel2" />
+                    <UserPicker isRequired={true} label="Escalation Level 2" name="escalationLevel2" />
                 </Cell>
             </Row>
         </Table>
@@ -262,7 +262,7 @@ const App = () => {
                     </Cell>
                     <Cell>
                         <Text>
-                            <Strong>SLA of Medium Issue</Strong>
+                            <Strong>SLA of Low Issue</Strong>
                         </Text>
                     </Cell>
                     <Cell>
@@ -328,7 +328,7 @@ const App = () => {
                         </Cell>
                         <Cell>
                             <Text>
-                                <Strong>SLA of Medium Issue</Strong>
+                                <Strong>SLA of Low Issue</Strong>
                             </Text>
                         </Cell>
                         <Cell>
